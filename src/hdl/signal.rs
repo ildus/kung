@@ -48,6 +48,14 @@ impl Add<Signal> for Signal {
     }
 }
 
+impl Add<Op> for Signal {
+    type Output = Op;
+
+    fn add(self, other: Op) -> Self::Output {
+        return Op::new(self, other, "+");
+    }
+}
+
 impl Add<u32> for Signal {
     type Output = Op;
 
@@ -61,6 +69,14 @@ impl Add<i32> for Signal {
 
     fn add(self, other: i32) -> Self::Output {
         return Op::new(self, other, "+");
+    }
+}
+
+impl Sub<Signal> for Signal {
+    type Output = Op;
+
+    fn sub(self, other: Self) -> Self::Output {
+        return Op::new(self, other, "-");
     }
 }
 

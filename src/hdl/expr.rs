@@ -1,6 +1,5 @@
-use crate::hdl::Synth;
-use crate::hdl::Operand;
-use crate::hdl::Signal;
+use crate::hdl::{Synth, Operand, Signal};
+use std::ops::{Add, Sub, Shl, Shr};
 
 pub struct Op {
     pub a: Box<dyn Operand>,
@@ -22,6 +21,14 @@ impl Op {
         }
     }
     pub fn new<T:'static + Operand>(a: Signal, b: T, op: &str) -> Op {
+        Op {
+            a: Box::new(a),
+            b: Some(Box::new(b)),
+            op: String::from(op),
+        }
+    }
+
+    pub fn new_op<T:'static + Operand>(a: Op, b: T, op: &str) -> Op {
         Op {
             a: Box::new(a),
             b: Some(Box::new(b)),
@@ -58,5 +65,53 @@ impl Assign {
 impl Synth for Assign {
     fn synth(&self) -> String {
         format!("assign {} = {};", &self.dest.repr(), &self.op.repr())
+    }
+}
+
+impl Add<Op> for Op {
+    type Output = Op;
+
+    fn add(self, other: Op) -> Self::Output {
+        return Op::new_op(self, other, "+");
+    }
+}
+
+impl Add<Signal> for Op {
+    type Output = Op;
+
+    fn add(self, other: Signal) -> Self::Output {
+        return Op::new_op(self, other, "+");
+    }
+}
+
+impl Sub<Op> for Op {
+    type Output = Op;
+
+    fn sub(self, other: Op) -> Self::Output {
+        return Op::new_op(self, other, "-");
+    }
+}
+
+impl Sub<Signal> for Op {
+    type Output = Op;
+
+    fn sub(self, other: Signal) -> Self::Output {
+        return Op::new_op(self, other, "-");
+    }
+}
+
+impl Shl<Op> for Op {
+    type Output = Op;
+
+    fn shl(self, other: Op) -> Self::Output {
+        return Op::new_op(self, other, "<<");
+    }
+}
+
+impl Shr<Op> for Op {
+    type Output = Op;
+
+    fn shr(self, other: Op) -> Self::Output {
+        return Op::new_op(self, other, ">>");
     }
 }

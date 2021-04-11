@@ -19,3 +19,33 @@ fn simple_adder() {
 
     assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule");
 }
+
+#[test]
+fn ops() {
+    use crate::hdl::expr::Op;
+
+    let a = Signal::new("a", 32);
+    let b = Signal::new("b", 32);
+
+    let mut op: Op = a + 1;
+    assert_eq!(op.repr(), "(a + 1)");
+
+    op = a - 1;
+    assert_eq!(op.repr(), "(a - 1)");
+
+    op = a >> 1;
+    assert_eq!(op.repr(), "(a >> 1)");
+
+    op = a << 1;
+    assert_eq!(op.repr(), "(a << 1)");
+
+    assert_eq!((a + b).repr(), "(a + b)");
+    assert_eq!((a - b).repr(), "(a - b)");
+    assert_eq!((a << b).repr(), "(a << b)");
+    assert_eq!((a >> b).repr(), "(a >> b)");
+    assert_eq!((a + (a - b)).repr(), "(a + (a - b))");
+    assert_eq!(((a - b) + a).repr(), "((a - b) + a)");
+    assert_eq!(((a - b) - a).repr(), "((a - b) - a)");
+    assert_eq!(((a - b) + (a + b)).repr(), "((a - b) + (a + b))");
+    assert_eq!(((a - b) - (a + b)).repr(), "((a - b) - (a + b))");
+}
