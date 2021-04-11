@@ -2,6 +2,11 @@ use std::ops::{AddAssign, SubAssign, Index, IndexMut};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
 
+pub struct Scope {
+    sync_on: Option<Signal>,
+    cond: Option<Op>,
+}
+
 pub struct Module {
     name: String,
     items: Vec<Box<dyn Synth>>,
@@ -65,6 +70,20 @@ impl Module {
             assign_op: Op::fake(),
         }
     }
+
+    pub fn comb(&self) -> Scope {
+        return Scope {
+            sync_on: None,
+            cond: None,
+        }
+    }
+
+    pub fn on(&self, signal: Signal) -> Scope {
+        return Scope {
+            sync_on: Some(signal),
+            cond: None,
+        }
+    }
 }
 
 
@@ -114,5 +133,28 @@ impl IndexMut<Signal> for Module {
 
         self.assign_signal = Some(signal);
         &mut self.assign_op
+    }
+}
+
+impl Scope {
+    pub fn when<T>(&mut self, condition: Op, rules: T) -> () where T: Fn() -> () {
+        self.cond = Some(condition);
+        rules();
+    }
+}
+
+impl Synth for Scope {
+    fn synth(&self) -> String {
+        let mut s = String::new();
+        if let Some(signal) = self.sync_on {
+            s.push_str("always @(posedge ");
+            s.push_str(signal.name());
+            s.push_str(") begin\n");
+            s.push_str("end\n");
+        } else {
+            s.push_str("always_comb begin\n");
+            s.push_str("end\n");
+        }
+        s
     }
 }

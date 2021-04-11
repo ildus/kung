@@ -21,6 +21,10 @@ impl Signal {
         }
     }
 
+    pub fn bool(name: &str) -> Signal {
+        return Signal::new(name, 1);
+    }
+
     pub fn def(&self) -> String {
         let mut s = String::new();
         s.push_str(&format!("logic [{}:0] {}", &(self.width - 1).to_string(), &self.name));
