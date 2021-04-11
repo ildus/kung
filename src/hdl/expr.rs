@@ -46,12 +46,6 @@ impl Operand for Op {
     }
 }
 
-impl Operand for u32 {
-    fn repr(&self) -> String {
-        return self.to_string()
-    }
-}
-
 impl Assign {
     pub fn new(dest: Signal, op: Op) -> Assign {
         Assign {

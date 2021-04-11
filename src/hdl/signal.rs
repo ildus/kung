@@ -1,8 +1,7 @@
-use std::ops::Add;
-use std::ops::Shl;
+use std::ops::{Add, Sub, Shl, Shr};
 use arraystring::{ArrayString, typenum::U64};
 use super::Operand;
-use super::expr::{Op, Assign};
+use super::expr::{Op};
 
 type SignalName = ArrayString<U64>;
 
@@ -57,10 +56,58 @@ impl Add<u32> for Signal {
     }
 }
 
-impl Shl<Op> for Signal {
-    type Output = Assign;
+impl Add<i32> for Signal {
+    type Output = Op;
 
-    fn shl(self, other: Op) -> Self::Output {
-        return Assign::new(self, other);
+    fn add(self, other: i32) -> Self::Output {
+        return Op::new(self, other, "+");
+    }
+}
+
+impl Sub<u32> for Signal {
+    type Output = Op;
+
+    fn sub(self, other: u32) -> Self::Output {
+        return Op::new(self, other, "-");
+    }
+}
+
+impl Sub<i32> for Signal {
+    type Output = Op;
+
+    fn sub(self, other: i32) -> Self::Output {
+        return Op::new(self, other, "-");
+    }
+}
+
+impl Shl<u32> for Signal {
+    type Output = Op;
+
+    fn shl(self, other: u32) -> Self::Output {
+        return Op::new(self, other, "<<");
+    }
+}
+
+impl Shl<Signal> for Signal {
+    type Output = Op;
+
+    fn shl(self, other: Signal) -> Self::Output {
+        return Op::new(self, other, "<<");
+    }
+}
+
+impl Shr<u32> for Signal {
+    type Output = Op;
+
+    fn shr(self, other: u32) -> Self::Output {
+        return Op::new(self, other, ">>");
+    }
+}
+
+impl Shr<Signal> for Signal {
+    type Output = Op;
+
+    fn shr(self, other: Signal) -> Self::Output {
+        return Op::new(self, other, ">>");
     }
 }
