@@ -41,10 +41,18 @@ impl Operand for Signal {
     }
 }
 
-impl Add for Signal {
+impl Add<Signal> for Signal {
     type Output = Op;
 
     fn add(self, other: Self) -> Self::Output {
+        return Op::new(self, other, "+");
+    }
+}
+
+impl Add<u32> for Signal {
+    type Output = Op;
+
+    fn add(self, other: u32) -> Self::Output {
         return Op::new(self, other, "+");
     }
 }
