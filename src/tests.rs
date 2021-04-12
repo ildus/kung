@@ -17,7 +17,7 @@ fn simple_adder() {
     m[c] = a + b;
     m[o] = c + 1;
 
-    assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule");
+    assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule\n");
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn comb() {
         });
     });
 
-    assert_eq!(m.synth(), "");
+    assert_eq!(m.synth(), "module comb();\n\nalways_comb begin\nc = (a + 1);\nif ((a == 1)) begin\nb = (a + c);\nend\nend\n\nendmodule\n");
 }
 
 #[test]
@@ -83,18 +83,14 @@ fn sync() {
         s[c] = a + 1;
         s.when(a == 1, |s| {
             s[b] = a + c;
-        });
-
-        s.elsewhen(a == 2, |s| {
-            s[b] = a + c;
-        });
-
-        s.otherwise(|s| {
-            s[b] = a + c;
+        }).elsewhen(a == b, |s| {
+            s[b] = a + c + 1;
+        }).otherwise(|s| {
+            s[b] = a + c + 2;
         });
     });
 
     println!("{}", m.synth());
 
-    assert_eq!(m.synth(), "");
+    assert_eq!(m.synth(), "module sync();\n\nalways_ff @(posedge clk) begin\nc <= (a + 1);\nif ((a == 1)) begin\nb <= (a + c);\nend\nelse if ((a == b)) begin\nb <= ((a + c) + 1);\nend\nelse begin\nb <= ((a + c) + 2);\nend\nend\n\nendmodule\n");
 }

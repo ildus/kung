@@ -161,7 +161,7 @@ impl Scope {
         }
     }
 
-    pub fn when<T>(&mut self, _stub: bool, add_rules: T) -> () where T: Fn(&mut Scope) -> () {
+    pub fn when<T>(&mut self, _stub: bool, add_rules: T) -> &mut Self where T: Fn(&mut Scope) -> () {
         let mut scope = Scope::new();
 
         let last_condition = Condition::pop_last();
@@ -174,9 +174,10 @@ impl Scope {
 
         add_rules(&mut scope);
         self.scopes.push(scope);
+        return self
     }
 
-    pub fn elsewhen<T>(&mut self, _stub: bool, add_rules: T) -> () where T: Fn(&mut Scope) -> () {
+    pub fn elsewhen<T>(&mut self, _stub: bool, add_rules: T) -> &mut Self where T: Fn(&mut Scope) -> () {
         let mut scope = Scope::new();
 
         let last_condition = Condition::pop_last();
@@ -184,11 +185,12 @@ impl Scope {
             scope.cond = ElseWhen(cond);
             scope.sync = self.sync;
         } else {
-            panic!("`when` rule expects a proper condition, got none");
+            panic!("`elsewhen` rule expects a proper condition, got none");
         }
 
         add_rules(&mut scope);
         self.scopes.push(scope);
+        return self
     }
 
     pub fn otherwise<T>(&mut self, add_rules: T) -> () where T: Fn(&mut Scope) -> () {
@@ -215,9 +217,7 @@ impl Scope {
         }
 
         for scope in self.scopes.iter() {
-            s.push_str("\n");
             s.push_str(&scope.synth());
-            s.push_str("\n");
         }
         return s;
     }
