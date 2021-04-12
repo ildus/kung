@@ -176,6 +176,30 @@ impl Scope {
         self.scopes.push(scope);
     }
 
+    pub fn elsewhen<T>(&mut self, _stub: bool, add_rules: T) -> () where T: Fn(&mut Scope) -> () {
+        let mut scope = Scope::new();
+
+        let last_condition = Condition::pop_last();
+        if let Some(cond) = last_condition {
+            scope.cond = ElseWhen(cond);
+            scope.sync = self.sync;
+        } else {
+            panic!("`when` rule expects a proper condition, got none");
+        }
+
+        add_rules(&mut scope);
+        self.scopes.push(scope);
+    }
+
+    pub fn otherwise<T>(&mut self, add_rules: T) -> () where T: Fn(&mut Scope) -> () {
+        let mut scope = Scope::new();
+        scope.cond = Otherwise;
+        scope.sync = self.sync;
+
+        add_rules(&mut scope);
+        self.scopes.push(scope);
+    }
+
     fn statements(&self, sync: bool) -> String {
         let mut s = String::new();
         let assign_op = if sync { "<=" } else { "=" };

@@ -84,6 +84,14 @@ fn sync() {
         s.when(a == 1, |s| {
             s[b] = a + c;
         });
+
+        s.elsewhen(a == 2, |s| {
+            s[b] = a + c;
+        });
+
+        s.otherwise(|s| {
+            s[b] = a + c;
+        });
     });
 
     println!("{}", m.synth());
