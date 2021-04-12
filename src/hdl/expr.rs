@@ -1,5 +1,6 @@
 use crate::hdl::{Synth, Operand, Signal};
-use std::ops::{Add, Sub, Shl, Shr};
+use std::ops::{Add, Sub, Shl, Shr, Mul};
+use duplicate::duplicate;
 
 pub struct Op {
     pub a: Box<dyn Operand>,
@@ -28,7 +29,7 @@ impl Op {
         }
     }
 
-    pub fn new_op<T:'static + Operand>(a: Op, b: T, op: &str) -> Op {
+    pub fn op_based<T:'static + Operand>(a: Op, b: T, op: &str) -> Op {
         Op {
             a: Box::new(a),
             b: Some(Box::new(b)),
@@ -68,50 +69,47 @@ impl Synth for Assign {
     }
 }
 
-impl Add<Op> for Op {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Add<tt> for Op {
     type Output = Op;
 
-    fn add(self, other: Op) -> Self::Output {
-        return Op::new_op(self, other, "+");
+    fn add(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "+");
     }
 }
 
-impl Add<Signal> for Op {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Sub<tt> for Op {
     type Output = Op;
 
-    fn add(self, other: Signal) -> Self::Output {
-        return Op::new_op(self, other, "+");
+    fn sub(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "-");
     }
 }
 
-impl Sub<Op> for Op {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Mul<tt> for Op {
     type Output = Op;
 
-    fn sub(self, other: Op) -> Self::Output {
-        return Op::new_op(self, other, "-");
+    fn mul(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "*");
     }
 }
 
-impl Sub<Signal> for Op {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Shl<tt> for Op {
     type Output = Op;
 
-    fn sub(self, other: Signal) -> Self::Output {
-        return Op::new_op(self, other, "-");
+    fn shl(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "<<");
     }
 }
 
-impl Shl<Op> for Op {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Shr<tt> for Op {
     type Output = Op;
 
-    fn shl(self, other: Op) -> Self::Output {
-        return Op::new_op(self, other, "<<");
-    }
-}
-
-impl Shr<Op> for Op {
-    type Output = Op;
-
-    fn shr(self, other: Op) -> Self::Output {
-        return Op::new_op(self, other, ">>");
+    fn shr(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, ">>");
     }
 }

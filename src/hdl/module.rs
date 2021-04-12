@@ -1,19 +1,25 @@
 use std::ops::{AddAssign, SubAssign, Index, IndexMut};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
+use std::ptr::{read, write};
+use duplicate::duplicate;
 
 pub struct Scope {
     sync_on: Option<Signal>,
     cond: Option<Op>,
+
+    assigns: Vec<Assign>,
+    assign_signal: Option<Signal>,
+    assign_op: Op,
 }
 
 pub struct Module {
     name: String,
     items: Vec<Box<dyn Synth>>,
-    assigns: Vec<Assign>,
     inputs: Vec<Signal>,
     outputs: Vec<Signal>,
 
+    assigns: Vec<Assign>,
     assign_signal: Option<Signal>,
     assign_op: Op,
 }
@@ -64,8 +70,8 @@ impl Module {
             items: vec![],
             inputs: vec![],
             outputs: vec![],
-            assigns: vec![],
 
+            assigns: vec![],
             assign_signal: None,
             assign_op: Op::fake(),
         }
@@ -75,6 +81,10 @@ impl Module {
         return Scope {
             sync_on: None,
             cond: None,
+
+            assigns: vec![],
+            assign_signal: None,
+            assign_op: Op::fake(),
         }
     }
 
@@ -82,6 +92,10 @@ impl Module {
         return Scope {
             sync_on: Some(signal),
             cond: None,
+
+            assigns: vec![],
+            assign_signal: None,
+            assign_op: Op::fake(),
         }
     }
 }
@@ -105,7 +119,8 @@ impl SubAssign<Signal> for Module {
     }
 }
 
-impl Index<Signal> for Module {
+#[duplicate(tt; [Module]; [Scope])]
+impl Index<Signal> for tt {
     type Output = Op;
 
     fn index(&self, index: Signal) -> &Self::Output {
@@ -118,9 +133,8 @@ impl Index<Signal> for Module {
     }
 }
 
-use std::ptr::{read, write};
-
-impl IndexMut<Signal> for Module {
+#[duplicate(tt; [Module]; [Scope])]
+impl IndexMut<Signal> for tt {
     fn index_mut(&mut self, signal: Signal) -> &mut Self::Output {
         unsafe {
             let ptr = read(&self.assign_op);
@@ -137,9 +151,9 @@ impl IndexMut<Signal> for Module {
 }
 
 impl Scope {
-    pub fn when<T>(&mut self, condition: Op, rules: T) -> () where T: Fn() -> () {
-        self.cond = Some(condition);
-        rules();
+    pub fn when<T>(&mut self, _stub: bool, rules: T) -> () where T: Fn(&mut Scope) -> () {
+        self.cond = Some(Op::fake());
+        rules(self);
     }
 }
 

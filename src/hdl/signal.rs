@@ -1,7 +1,8 @@
-use std::ops::{Add, Sub, Shl, Shr};
+use std::ops::{Add, Sub, Shl, Shr, Mul};
 use arraystring::{ArrayString, typenum::U64};
 use super::Operand;
 use super::expr::{Op};
+use duplicate::duplicate;
 
 type SignalName = ArrayString<U64>;
 
@@ -12,7 +13,7 @@ pub struct Signal {
 }
 
 impl Signal {
-    pub fn new(name: &str, width: u32) -> Signal {
+    pub fn new(name: &str, width: u32) -> Self {
         let name = SignalName::try_from_str(name).expect("expected valid name");
 
         return Signal{
@@ -21,7 +22,7 @@ impl Signal {
         }
     }
 
-    pub fn bool(name: &str) -> Signal {
+    pub fn bool(name: &str) -> Self {
         return Signal::new(name, 1);
     }
 
@@ -44,90 +45,53 @@ impl Operand for Signal {
     }
 }
 
-impl Add<Signal> for Signal {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Add<tt> for Signal {
     type Output = Op;
 
-    fn add(self, other: Self) -> Self::Output {
+    fn add(self, other: tt) -> Self::Output {
         return Op::new(self, other, "+");
     }
 }
 
-impl Add<Op> for Signal {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Sub<tt> for Signal {
     type Output = Op;
 
-    fn add(self, other: Op) -> Self::Output {
-        return Op::new(self, other, "+");
-    }
-}
-
-impl Add<u32> for Signal {
-    type Output = Op;
-
-    fn add(self, other: u32) -> Self::Output {
-        return Op::new(self, other, "+");
-    }
-}
-
-impl Add<i32> for Signal {
-    type Output = Op;
-
-    fn add(self, other: i32) -> Self::Output {
-        return Op::new(self, other, "+");
-    }
-}
-
-impl Sub<Signal> for Signal {
-    type Output = Op;
-
-    fn sub(self, other: Self) -> Self::Output {
+    fn sub(self, other: tt) -> Self::Output {
         return Op::new(self, other, "-");
     }
 }
 
-impl Sub<u32> for Signal {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Mul<tt> for Signal {
     type Output = Op;
 
-    fn sub(self, other: u32) -> Self::Output {
-        return Op::new(self, other, "-");
+    fn mul(self, other: tt) -> Self::Output {
+        return Op::new(self, other, "*");
     }
 }
 
-impl Sub<i32> for Signal {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Shl<tt> for Signal {
     type Output = Op;
 
-    fn sub(self, other: i32) -> Self::Output {
-        return Op::new(self, other, "-");
-    }
-}
-
-impl Shl<u32> for Signal {
-    type Output = Op;
-
-    fn shl(self, other: u32) -> Self::Output {
+    fn shl(self, other: tt) -> Self::Output {
         return Op::new(self, other, "<<");
     }
 }
 
-impl Shl<Signal> for Signal {
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Shr<tt> for Signal {
     type Output = Op;
 
-    fn shl(self, other: Signal) -> Self::Output {
-        return Op::new(self, other, "<<");
-    }
-}
-
-impl Shr<u32> for Signal {
-    type Output = Op;
-
-    fn shr(self, other: u32) -> Self::Output {
+    fn shr(self, other: tt) -> Self::Output {
         return Op::new(self, other, ">>");
     }
 }
 
-impl Shr<Signal> for Signal {
-    type Output = Op;
-
-    fn shr(self, other: Signal) -> Self::Output {
-        return Op::new(self, other, ">>");
+impl PartialEq<u32> for Signal {
+    fn eq(&self, _other: &u32) -> bool {
+        return false
     }
 }

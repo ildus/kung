@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 arraystring = "0.3.0"
 num = "0.2.1"
+duplicate = "0.2.9"
