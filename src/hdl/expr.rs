@@ -1,4 +1,4 @@
-use crate::hdl::{Synth, Operand, Signal};
+use crate::hdl::{Operand, Signal};
 use std::ops::{Add, Sub, Shl, Shr, Mul};
 use duplicate::duplicate;
 
@@ -63,9 +63,10 @@ impl Assign {
     }
 }
 
-impl Synth for Assign {
-    fn synth(&self) -> String {
-        format!("assign {} = {};", &self.dest.repr(), &self.op.repr())
+impl Assign {
+    pub fn synth(&self, nonblocking: bool) -> String {
+        let assign_op = if nonblocking { "<=" } else { "=" };
+        format!("{} {} {};", &self.dest.repr(), assign_op, &self.op.repr())
     }
 }
 

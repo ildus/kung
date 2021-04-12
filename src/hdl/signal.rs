@@ -2,6 +2,7 @@ use std::ops::{Add, Sub, Shl, Shr, Mul};
 use arraystring::{ArrayString, typenum::U64};
 use super::Operand;
 use super::expr::{Op};
+use super::condition::{Condition};
 use duplicate::duplicate;
 
 type SignalName = ArrayString<U64>;
@@ -90,8 +91,11 @@ impl Shr<tt> for Signal {
     }
 }
 
-impl PartialEq<u32> for Signal {
-    fn eq(&self, _other: &u32) -> bool {
+#[duplicate(tt; [Signal]; [u32]; [i32])]
+impl PartialEq<tt> for Signal {
+    fn eq(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), "==");
+        Condition::push_last(cond.repr());
         return false
     }
 }

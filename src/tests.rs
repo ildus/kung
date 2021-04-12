@@ -55,30 +55,38 @@ fn ops() {
 
 #[test]
 fn comb() {
-    let m = Module::new("comb");
+    let mut m = Module::new("comb");
     let a = Signal::new("a", 32);
     let b = Signal::new("b", 32);
     let c = Signal::new("c", 32);
 
     // always_comb
-    let mut comb = m.comb();
-    comb[c] = a + 1;
-    comb.when(a == 1, |s| {
-        s[b] = a + c;
-    })
+    m.comb(|s| {
+        s[c] = a + 1;
+        s.when(a == 1, |s| {
+            s[b] = a + c;
+        });
+    });
+
+    assert_eq!(m.synth(), "");
 }
 
 #[test]
 fn sync() {
-    let m = Module::new("comb");
+    let mut m = Module::new("sync");
     let a = Signal::new("a", 32);
     let b = Signal::new("b", 32);
     let c = Signal::new("c", 32);
     let clk = Signal::bool("clk");
 
-    let mut sync = m.on(clk);
-    sync[c] = a + 1;
-    sync.when(a == 1, |s| {
-        s[b] = a + c;
-    })
+    m.on(clk, |s| {
+        s[c] = a + 1;
+        s.when(a == 1, |s| {
+            s[b] = a + c;
+        });
+    });
+
+    println!("{}", m.synth());
+
+    assert_eq!(m.synth(), "");
 }
