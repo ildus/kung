@@ -139,7 +139,7 @@ impl Shr<tt> for Signal {
 impl Signal {
     pub fn cmp(&self, other: Box<dyn Operand>, op: &str) -> bool {
         let cond = Condition::signal_based(*self, other, op);
-        Condition::push_last(cond.repr());
+        Condition::push_last(cond);
         return false
     }
 }

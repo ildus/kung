@@ -1,6 +1,6 @@
 use crate::hdl::{Operand, Signal};
 
-static mut LAST_CONDITION: Option<String> = None;
+static mut LAST_CONDITION: Option<Condition> = None;
 
 pub enum Conditional {
     AlwaysComb,
@@ -17,7 +17,7 @@ pub struct Condition {
 }
 
 impl Condition {
-    pub fn push_last(cond: String) {
+    pub fn push_last(cond: Condition) {
         unsafe {
             LAST_CONDITION = Some(cond);
         }
