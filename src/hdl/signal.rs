@@ -136,18 +136,22 @@ impl Shr<tt> for Signal {
     }
 }
 
-#[duplicate(tt; [Signal]; [u32]; [i32])]
-impl PartialEq<tt> for Signal {
-    fn eq(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), "==");
+impl Signal {
+    pub fn cmp(&self, other: Box<dyn Operand>, op: &str) -> bool {
+        let cond = Condition::signal_based(*self, other, op);
         Condition::push_last(cond.repr());
         return false
     }
+}
+
+#[duplicate(tt; [Signal]; [u32]; [i32])]
+impl PartialEq<tt> for Signal {
+    fn eq(&self, other: &tt) -> bool {
+        return Signal::cmp(self, Box::new(*other), "==")
+    }
 
     fn ne(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), "!=");
-        Condition::push_last(cond.repr());
-        return false
+        return Signal::cmp(self, Box::new(*other), "!=")
     }
 }
 
@@ -156,24 +160,17 @@ impl PartialOrd<tt> for Signal {
     fn partial_cmp(&self, _other: &tt) -> Option<Ordering> {
         Some(Ordering::Equal)
     }
+
     fn lt(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), "<");
-        Condition::push_last(cond.repr());
-        return false
+        return Signal::cmp(self, Box::new(*other), "<")
     }
     fn le(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), "<=");
-        Condition::push_last(cond.repr());
-        return false
+        return Signal::cmp(self, Box::new(*other), "<=")
     }
     fn gt(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), ">");
-        Condition::push_last(cond.repr());
-        return false
+        return Signal::cmp(self, Box::new(*other), ">")
     }
     fn ge(&self, other: &tt) -> bool {
-        let cond = Condition::signal_based(*self, Box::new(*other), ">=");
-        Condition::push_last(cond.repr());
-        return false
+        return Signal::cmp(self, Box::new(*other), ">=")
     }
 }
