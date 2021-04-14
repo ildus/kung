@@ -1,5 +1,5 @@
-use crate::hdl::{Operand, Signal};
-use std::ops::{Add, Sub, Shl, Shr, Mul};
+use crate::hdl::{Operand, Signal, condition::Condition};
+use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
 use duplicate::duplicate;
 
 pub struct Op {
@@ -14,32 +14,40 @@ pub struct Assign {
 }
 
 impl Op {
-    pub fn new_unary(a: Signal, op: &str) -> Op {
-        Op {
+    pub fn new_unary(a: Signal, op: &str) -> Self {
+        Self {
             a: Box::new(a.clone()),
             b: None,
             op: String::from(op),
         }
     }
-    pub fn new<T:'static + Operand>(a: Signal, b: T, op: &str) -> Op {
-        Op {
+    pub fn new<T:'static + Operand>(a: Signal, b: T, op: &str) -> Self {
+        Self {
             a: Box::new(a),
             b: Some(Box::new(b)),
             op: String::from(op),
         }
     }
 
-    pub fn op_based<T:'static + Operand>(a: Op, b: T, op: &str) -> Op {
-        Op {
+    pub fn op_based<T:'static + Operand>(a: Self, b: T, op: &str) -> Self {
+        Self {
             a: Box::new(a),
             b: Some(Box::new(b)),
             op: String::from(op),
         }
     }
 
-    pub fn fake() -> Op {
+    pub fn op_based_unary(a: Self, op: &str) -> Self {
+        Self {
+            a: Box::new(a),
+            b: None,
+            op: String::from(op),
+        }
+    }
+
+    pub fn fake() -> Self {
         let fakesig = Signal::new("NOT_DEFINED", 0);
-        let fake_op = Op::new_unary(fakesig, "NOP_");
+        let fake_op = Self::new_unary(fakesig, "NOP_");
         fake_op
     }
 }
@@ -98,6 +106,15 @@ impl Mul<tt> for Op {
 }
 
 #[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Div<tt> for Op {
+    type Output = Op;
+
+    fn div(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "/");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
 impl Shl<tt> for Op {
     type Output = Op;
 
@@ -112,5 +129,60 @@ impl Shr<tt> for Op {
 
     fn shr(self, other: tt) -> Self::Output {
         return Op::op_based(self, other, ">>");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitAnd<tt> for Op {
+    type Output = Op;
+
+    fn bitand(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "&");
+    }
+}
+
+impl Not for Op {
+    type Output = Op;
+
+    fn not(self) -> Self::Output {
+        return Op::op_based_unary(self, "~");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitOr<tt> for Op {
+    type Output = Op;
+
+    fn bitor(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "|");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitXor<tt> for Op {
+    type Output = Op;
+
+    fn bitxor(self, other: tt) -> Self::Output {
+        return Op::op_based(self, other, "^");
+    }
+}
+
+impl From<bool> for Op {
+    fn from(item: bool) -> Self {
+        let last_condition = Condition::pop_last();
+        if let Some(cond) = last_condition {
+            // do nothing
+            Op {
+                a: Box::new(cond),
+                b: None,
+                op: String::from(""),
+            }
+        } else {
+            Op {
+                a: Box::new(item as u32),
+                b: None,
+                op: String::from(""),
+            }
+        }
     }
 }

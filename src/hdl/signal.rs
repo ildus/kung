@@ -1,9 +1,10 @@
-use std::ops::{Add, Sub, Shl, Shr, Mul};
+use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
 use arraystring::{ArrayString, typenum::U64};
 use super::Operand;
 use super::expr::{Op};
 use super::condition::{Condition};
 use duplicate::duplicate;
+use std::cmp::Ordering;
 
 type SignalName = ArrayString<U64>;
 
@@ -56,6 +57,41 @@ impl Add<tt> for Signal {
 }
 
 #[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitAnd<tt> for Signal {
+    type Output = Op;
+
+    fn bitand(self, other: tt) -> Self::Output {
+        return Op::new(self, other, "&");
+    }
+}
+
+impl Not for Signal {
+    type Output = Op;
+
+    fn not(self) -> Self::Output {
+        return Op::new_unary(self, "~");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitOr<tt> for Signal {
+    type Output = Op;
+
+    fn bitor(self, other: tt) -> Self::Output {
+        return Op::new(self, other, "|");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl BitXor<tt> for Signal {
+    type Output = Op;
+
+    fn bitxor(self, other: tt) -> Self::Output {
+        return Op::new(self, other, "^");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
 impl Sub<tt> for Signal {
     type Output = Op;
 
@@ -70,6 +106,15 @@ impl Mul<tt> for Signal {
 
     fn mul(self, other: tt) -> Self::Output {
         return Op::new(self, other, "*");
+    }
+}
+
+#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
+impl Div<tt> for Signal {
+    type Output = Op;
+
+    fn div(self, other: tt) -> Self::Output {
+        return Op::new(self, other, "/");
     }
 }
 
@@ -95,6 +140,39 @@ impl Shr<tt> for Signal {
 impl PartialEq<tt> for Signal {
     fn eq(&self, other: &tt) -> bool {
         let cond = Condition::signal_based(*self, Box::new(*other), "==");
+        Condition::push_last(cond.repr());
+        return false
+    }
+
+    fn ne(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), "!=");
+        Condition::push_last(cond.repr());
+        return false
+    }
+}
+
+#[duplicate(tt; [Signal]; [u32]; [i32])]
+impl PartialOrd<tt> for Signal {
+    fn partial_cmp(&self, _other: &tt) -> Option<Ordering> {
+        Some(Ordering::Equal)
+    }
+    fn lt(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), "<");
+        Condition::push_last(cond.repr());
+        return false
+    }
+    fn le(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), "<=");
+        Condition::push_last(cond.repr());
+        return false
+    }
+    fn gt(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), ">");
+        Condition::push_last(cond.repr());
+        return false
+    }
+    fn ge(&self, other: &tt) -> bool {
+        let cond = Condition::signal_based(*self, Box::new(*other), ">=");
         Condition::push_last(cond.repr());
         return false
     }

@@ -17,7 +17,7 @@ pub trait Operand {
     fn repr(&self) -> String;
 }
 
-#[duplicate(tt; [u32]; [i32])]
+#[duplicate(tt; [u32]; [i32]; [String])]
 impl Operand for tt {
     fn repr(&self) -> String {
         return self.to_string()

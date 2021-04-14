@@ -4,6 +4,7 @@ use super::expr::{Assign, Op};
 use super::condition::{Condition, Conditional, Conditional::*};
 use std::ptr::{read, write};
 use duplicate::duplicate;
+use std::collections::BTreeMap;
 
 pub struct Scope {
     cond: Conditional,
@@ -18,8 +19,8 @@ pub struct Scope {
 
 pub struct Module {
     name: String,
-    inputs: Vec<Signal>,
-    outputs: Vec<Signal>,
+    inputs: BTreeMap<String, Signal>,
+    outputs: BTreeMap<String, Signal>,
 
     assigns: Vec<Assign>,
     assign_signal: Option<Signal>,
@@ -36,13 +37,13 @@ impl Synth for Module {
         s.push_str(&self.name);
         s.push_str("();\n");
 
-        for item in self.inputs.iter() {
+        for (_, item) in &self.inputs {
             s.push_str("input ");
             s.push_str(&item.def());
             s.push_str(";\n");
         }
 
-        for item in self.outputs.iter() {
+        for (_, item) in &self.outputs {
             s.push_str("output ");
             s.push_str(&item.def());
             s.push_str(";\n");
@@ -72,8 +73,8 @@ impl Module {
     pub fn new(name: &str) -> Module {
         return Module {
             name: String::from(name),
-            inputs: vec![],
-            outputs: vec![],
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
             scopes: vec![],
 
             assigns: vec![],
@@ -106,13 +107,21 @@ impl AddAssign<Assign> for Module {
 
 impl AddAssign<Signal> for Module {
     fn add_assign(&mut self, other: Signal) {
-        self.inputs.push(other.clone());
+        if let None = self.inputs.get(other.name()) {
+            self.inputs.insert(String::from(other.name()), other);
+        } else {
+            panic!("input with name '{}' already defined in the module", other.name());
+        }
     }
 }
 
 impl SubAssign<Signal> for Module {
     fn sub_assign(&mut self, other: Signal) {
-        self.outputs.push(other.clone());
+        if let None = self.outputs.get(other.name()) {
+            self.outputs.insert(String::from(other.name()), other);
+        } else {
+            panic!("output with name '{}' already defined in the module", other.name());
+        }
     }
 }
 

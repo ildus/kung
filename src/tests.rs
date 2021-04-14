@@ -42,14 +42,24 @@ fn ops() {
     assert_eq!((a + b).repr(), "(a + b)");
     assert_eq!((a - b).repr(), "(a - b)");
     assert_eq!((a * b).repr(), "(a * b)");
+    assert_eq!((a / b).repr(), "(a / b)");
     assert_eq!((a << b).repr(), "(a << b)");
     assert_eq!((a >> b).repr(), "(a >> b)");
+    assert_eq!((a & b).repr(), "(a & b)");
+    assert_eq!((a | b).repr(), "(a | b)");
+    assert_eq!((a ^ b).repr(), "(a ^ b)");
+    assert_eq!((!a).repr(), "(~a)");
     assert_eq!((a + (a - b)).repr(), "(a + (a - b))");
     assert_eq!(((a - b) + a).repr(), "((a - b) + a)");
     assert_eq!(((a - b) - a).repr(), "((a - b) - a)");
     assert_eq!(((a - b) + (a + b)).repr(), "((a - b) + (a + b))");
     assert_eq!(((a - b) - (a + b)).repr(), "((a - b) - (a + b))");
     assert_eq!(((a - b) * (a + b)).repr(), "((a - b) * (a + b))");
+    assert_eq!(((a - b) / (a + b)).repr(), "((a - b) / (a + b))");
+    assert_eq!(((a - b) & (a + b)).repr(), "((a - b) & (a + b))");
+    assert_eq!(((a - b) | (a + b)).repr(), "((a - b) | (a + b))");
+    assert_eq!(((a - b) ^ (a + b)).repr(), "((a - b) ^ (a + b))");
+    assert_eq!((!(a - b)).repr(), "(~(a - b))");
     assert_eq!(((a - b) - 1u32).repr(), "((a - b) - 1)");
 }
 
@@ -83,14 +93,33 @@ fn sync() {
         s[c] = a + 1;
         s.when(a == 1, |s| {
             s[b] = a + c;
-        }).elsewhen(a == b, |s| {
-            s[b] = a + c + 1;
         }).otherwise(|s| {
             s[b] = a + c + 2;
         });
     });
 
-    println!("{}", m.synth());
+    assert_eq!(m.synth(), "module sync();\n\nalways_ff @(posedge clk) begin\nc <= (a + 1);\nif ((a == 1)) begin\nb <= (a + c);\nend\nelse begin\nb <= ((a + c) + 2);\nend\nend\n\nendmodule\n");
+}
 
-    assert_eq!(m.synth(), "module sync();\n\nalways_ff @(posedge clk) begin\nc <= (a + 1);\nif ((a == 1)) begin\nb <= (a + c);\nend\nelse if ((a == b)) begin\nb <= ((a + c) + 1);\nend\nelse begin\nb <= ((a + c) + 2);\nend\nend\n\nendmodule\n");
+#[test]
+fn conds() {
+    let mut m = Module::new("cond");
+    let comp = Signal::new("comp", 32);
+    let a = Signal::new("a", 32);
+    let b = Signal::new("b", 32);
+    let c = Signal::new("c", 32);
+    let d = Signal::new("d", 32);
+    let e = Signal::new("e", 32);
+    let f = Signal::new("f", 32);
+    let g = Signal::new("g", 32);
+
+    m[a] = true.into();
+    m[b] = (a == 1).into();
+    m[c] = (b != comp).into();
+    m[d] = (c >= 1).into();
+    m[e] = (d <= comp).into();
+    m[f] = (e > 1).into();
+    m[g] = (f < 1).into();
+
+    assert_eq!(m.synth(), "module cond();\nassign g = ((f < 1));\nassign a = (1);\nassign b = ((a == 1));\nassign c = ((b != comp));\nassign d = ((c >= 1));\nassign e = ((d <= comp));\nassign f = ((e > 1));\nendmodule\n");
 }
