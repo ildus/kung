@@ -102,7 +102,7 @@ fn sync() {
 }
 
 #[test]
-fn conds() {
+fn signal_conds() {
     let mut m = Module::new("cond");
     let comp = Signal::new("comp", 32);
     let a = Signal::new("a", 32);
@@ -122,4 +122,22 @@ fn conds() {
     m[g] = (f < 1).into();
 
     assert_eq!(m.synth(), "module cond();\nassign g = ((f < 1));\nassign a = (1);\nassign b = ((a == 1));\nassign c = ((b != comp));\nassign d = ((c >= 1));\nassign e = ((d <= comp));\nassign f = ((e > 1));\nendmodule\n");
+}
+
+#[macro_export]
+macro_rules! cond {
+    ($e:expr) => {{
+        {
+            //let _res: bool = $e;
+            println!("{}", stringify!{$e});
+        }
+    }};
+}
+
+#[test]
+fn complex_conds() {
+    let a = Signal::new("a", 32);
+    let b = Signal::new("b", 32);
+
+    cond! { a == 1 || b == 2 }
 }

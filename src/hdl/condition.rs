@@ -1,7 +1,9 @@
 use crate::hdl::{Operand, Signal};
 use std::fmt;
 
-static mut LAST_CONDITION: Option<Condition> = None;
+thread_local! {
+    pub static mut LAST_CONDITION: Option<Condition> = None;
+}
 
 pub enum Conditional {
     AlwaysComb,

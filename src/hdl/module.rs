@@ -2,13 +2,14 @@ use std::ops::{AddAssign, SubAssign, Index, IndexMut};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
 use super::condition::{Condition, Conditional, Conditional::*};
+use std::ptr::{read, write};
 use duplicate::duplicate;
 use std::collections::BTreeMap;
 
 pub struct Scope {
     cond: Conditional,
 
-    assigns: Vec<Assign>,
+    assigns: BTreeMap<String, Assign>,
     assign_signal: Option<Signal>,
     assign_op: Op,
 
@@ -21,7 +22,7 @@ pub struct Module {
     inputs: BTreeMap<String, Signal>,
     outputs: BTreeMap<String, Signal>,
 
-    assigns: Vec<Assign>,
+    assigns: BTreeMap<String, Assign>,
     assign_signal: Option<Signal>,
     assign_op: Op,
 
@@ -53,7 +54,7 @@ impl Synth for Module {
             s.push_str("\n");
         }
 
-        for assign in self.assigns.iter() {
+        for (_, assign) in &self.assigns {
             s.push_str("assign ");
             s.push_str(&assign.synth(false));
             s.push_str("\n");
@@ -76,7 +77,7 @@ impl Module {
             outputs: BTreeMap::new(),
             scopes: vec![],
 
-            assigns: vec![],
+            assigns: BTreeMap::new(),
             assign_signal: None,
             assign_op: Op::fake(),
         }
@@ -100,7 +101,11 @@ impl Module {
 
 impl AddAssign<Assign> for Module {
     fn add_assign(&mut self, other: Assign) {
-        self.assigns.push(other);
+        if let None = self.assigns.get(other.dest.name()) {
+            self.assigns.insert(String::from(other.dest.name()), other);
+        } else {
+            panic!("assign with destination '{}' already defined in this module", other.dest.name());
+        }
     }
 }
 
@@ -129,8 +134,8 @@ impl Index<Signal> for tt {
     type Output = Op;
 
     fn index(&self, index: Signal) -> &Self::Output {
-        for item in self.assigns.iter() {
-            if index.name() == item.dest.name() {
+        for (name, item) in &self.assigns {
+            if index.name() == name {
                 return &item.op
             }
         }
@@ -141,11 +146,15 @@ impl Index<Signal> for tt {
 #[duplicate(tt; [Module]; [Scope])]
 impl IndexMut<Signal> for tt {
     fn index_mut(&mut self, signal: Signal) -> &mut Self::Output {
-        let assign_op = std::mem::replace(&mut self.assign_op, Op::fake());
-        if let Some(sig) = self.assign_signal {
-            let assign = Assign::new(sig, assign_op);
-            self.assigns.push(assign);
+        unsafe {
+            let ptr = read(&self.assign_op);
+            if let Some(sig) = self.assign_signal {
+                let assign = Assign::new(sig, ptr);
+                self.add_assign(assign);
+            }
+            write(&mut self.assign_op, Op::fake());
         }
+
         self.assign_signal = Some(signal);
         &mut self.assign_op
     }
@@ -157,7 +166,7 @@ impl Scope {
             cond: AlwaysComb,
             scopes: vec![],
 
-            assigns: vec![],
+            assigns: BTreeMap::new(),
             assign_signal: None,
             assign_op: Op::fake(),
 
@@ -215,7 +224,7 @@ impl Scope {
             s.push_str("\n");
         }
 
-        for assign in self.assigns.iter() {
+        for (_, assign) in &self.assigns {
             s.push_str(&assign.synth(sync));
             s.push_str("\n");
         }
@@ -224,6 +233,16 @@ impl Scope {
             s.push_str(&scope.synth());
         }
         return s;
+    }
+}
+
+impl AddAssign<Assign> for Scope {
+    fn add_assign(&mut self, other: Assign) {
+        if let None = self.assigns.get(other.dest.name()) {
+            self.assigns.insert(String::from(other.dest.name()), other);
+        } else {
+            panic!("assign with destination '{}' already defined in this scope", other.dest.name());
+        }
     }
 }
 
