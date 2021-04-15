@@ -2,7 +2,6 @@ use std::ops::{AddAssign, SubAssign, Index, IndexMut};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
 use super::condition::{Condition, Conditional, Conditional::*};
-use std::ptr::{read, write};
 use duplicate::duplicate;
 use std::collections::BTreeMap;
 
@@ -142,15 +141,11 @@ impl Index<Signal> for tt {
 #[duplicate(tt; [Module]; [Scope])]
 impl IndexMut<Signal> for tt {
     fn index_mut(&mut self, signal: Signal) -> &mut Self::Output {
-        unsafe {
-            let ptr = read(&self.assign_op);
-            if let Some(sig) = self.assign_signal {
-                let assign = Assign::new(sig, ptr);
-                self.assigns.push(assign);
-            }
-            write(&mut self.assign_op, Op::fake());
+        let assign_op = std::mem::replace(&mut self.assign_op, Op::fake());
+        if let Some(sig) = self.assign_signal {
+            let assign = Assign::new(sig, assign_op);
+            self.assigns.push(assign);
         }
-
         self.assign_signal = Some(signal);
         &mut self.assign_op
     }

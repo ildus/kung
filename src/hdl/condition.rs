@@ -1,12 +1,13 @@
 use crate::hdl::{Operand, Signal};
+use std::fmt;
 
 static mut LAST_CONDITION: Option<Condition> = None;
 
 pub enum Conditional {
     AlwaysComb,
     Posedge(Signal),
-    When(String),
-    ElseWhen(String),
+    When(Condition),
+    ElseWhen(Condition),
     Otherwise,
 }
 
@@ -23,16 +24,10 @@ impl Condition {
         }
     }
 
-    pub fn pop_last() -> Option<String> {
+    pub fn pop_last() -> Option<Condition> {
         unsafe {
-            if let Some(s) = &LAST_CONDITION {
-                let last = Some(s.clone());
-                LAST_CONDITION = None;
-                last
-            }
-            else {
-                None
-            }
+            let last = std::mem::replace(&mut LAST_CONDITION, None);
+            last
         }
     }
 
@@ -56,6 +51,12 @@ impl Condition {
         let fakesig = Signal::new("NOT_DEFINED", 0);
         let fake_op = Condition::signal_based_unary(fakesig, "NOP_");
         fake_op
+    }
+}
+
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.repr())
     }
 }
 
