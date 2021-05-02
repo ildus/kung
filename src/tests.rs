@@ -14,12 +14,13 @@ fn simple_adder() {
     m += b;
     m -= o;
 
-    m[c] = a + b;
-    m[o] = c + 1;
+    //m[c] = a + b;
+    //m[o] = c + 1;
 
     assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule\n");
 }
 
+    /*
 #[test]
 fn ops() {
     use crate::hdl::expr::Op;
@@ -123,6 +124,7 @@ fn signal_conds() {
 
     assert_eq!(m.synth(), "module cond();\nassign g = ((f < 1));\nassign a = (1);\nassign b = ((a == 1));\nassign c = ((b != comp));\nassign d = ((c >= 1));\nassign e = ((d <= comp));\nassign f = ((e > 1));\nendmodule\n");
 }
+*/
 
 #[macro_export]
 macro_rules! cond {

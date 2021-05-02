@@ -1,26 +1,28 @@
-use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
+//use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
 use arraystring::{ArrayString, typenum::U64};
-use super::Operand;
-use super::expr::{Op};
-use super::condition::{Condition};
-use duplicate::duplicate;
-use std::cmp::Ordering;
+use super::{Operand, Module};
+//use super::expr::{Op};
+//use super::condition::{Condition};
+//use duplicate::duplicate;
+//use std::cmp::Ordering;
 
 type SignalName = ArrayString<U64>;
 
 #[derive(Copy, Clone)]
-pub struct Signal {
+pub struct Signal<'module> {
     name: SignalName,
     width: u32,
+    module: Option<&'module Module<'module>>,
 }
 
-impl Signal {
+impl Signal<'_> {
     pub fn new(name: &str, width: u32) -> Self {
         let name = SignalName::try_from_str(name).expect("expected valid name");
 
         return Signal{
             name: name,
             width,
+            module: None,
         }
     }
 
@@ -39,7 +41,7 @@ impl Signal {
     }
 }
 
-impl Operand for Signal {
+impl Operand for Signal<'_> {
     fn repr(&self) -> String {
         let mut s = String::new();
         s.push_str(&format!("{}", &self.name));
@@ -47,6 +49,7 @@ impl Operand for Signal {
     }
 }
 
+/*
 #[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
 impl Add<tt> for Signal {
     type Output = Op;
@@ -174,3 +177,4 @@ impl PartialOrd<tt> for Signal {
         return Signal::cmp(self, Box::new(*other), ">=")
     }
 }
+*/

@@ -1,35 +1,36 @@
-use std::ops::{AddAssign, SubAssign, Index, IndexMut};
+//use std::ops::{AddAssign, SubAssign, Index, IndexMut};
+use std::ops::{AddAssign, SubAssign};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
-use super::condition::{Condition, Conditional, Conditional::*};
-use std::ptr::{read, write};
-use duplicate::duplicate;
+use super::condition::{Conditional, Conditional::*};
+//use std::ptr::{read, write};
+//use duplicate::duplicate;
 use std::collections::BTreeMap;
 
-pub struct Scope {
-    cond: Conditional,
+pub struct Scope<'module> {
+    cond: Conditional<'module>,
 
-    assigns: BTreeMap<String, Assign>,
-    assign_signal: Option<Signal>,
-    assign_op: Op,
+    assigns: BTreeMap<String, Assign<'module>>,
+    assign_signal: Option<Signal<'module>>,
+    assign_op: Option<Op<'module>>,
 
     sync: bool,
-    scopes: Vec<Scope>,
+    scopes: Vec<Scope<'module>>,
 }
 
-pub struct Module {
+pub struct Module<'module> {
     name: String,
-    inputs: BTreeMap<String, Signal>,
-    outputs: BTreeMap<String, Signal>,
+    inputs: BTreeMap<String, Signal<'module>>,
+    outputs: BTreeMap<String, Signal<'module>>,
 
-    assigns: BTreeMap<String, Assign>,
-    assign_signal: Option<Signal>,
-    assign_op: Op,
+    assigns: BTreeMap<String, Assign<'module>>,
+    assign_signal: Option<Signal<'module>>,
+    assign_op: Option<Op<'module>>,
 
-    scopes: Vec<Scope>,
+    scopes: Vec<Scope<'module>>,
 }
 
-impl Synth for Module {
+impl<'module> Synth for Module<'module> {
     fn synth(&self) -> String {
         let mut s = String::new();
 
@@ -50,7 +51,7 @@ impl Synth for Module {
         }
 
         if let Some(sig) = self.assign_signal {
-            s.push_str(&format!("assign {} = {};", &sig.repr(), &self.assign_op.repr()));
+            s.push_str(&format!("assign {} = {};", &sig.repr(), &self.assign_op.as_ref().unwrap().repr()));
             s.push_str("\n");
         }
 
@@ -59,7 +60,7 @@ impl Synth for Module {
             s.push_str(&assign.synth(false));
             s.push_str("\n");
         }
-        for scope in self.scopes.iter() {
+        for scope in &self.scopes {
             s.push_str("\n");
             s.push_str(&scope.synth());
             s.push_str("\n");
@@ -69,7 +70,7 @@ impl Synth for Module {
     }
 }
 
-impl Module {
+impl<'module> Module<'module> {
     pub fn new(name: &str) -> Module {
         return Module {
             name: String::from(name),
@@ -79,7 +80,7 @@ impl Module {
 
             assigns: BTreeMap::new(),
             assign_signal: None,
-            assign_op: Op::fake(),
+            assign_op: None,
         }
     }
 
@@ -89,7 +90,7 @@ impl Module {
         self.scopes.push(scope);
     }
 
-    pub fn on<T>(&mut self, signal: Signal, add_rules: T) where T:Fn(&mut Scope) -> () {
+    pub fn on<T>(&mut self, signal: &'module Signal<'module>, add_rules: T) where T:Fn(&mut Scope) -> () {
         let mut scope = Scope::new();
         scope.cond = Posedge(signal);
         scope.sync = true;
@@ -99,8 +100,8 @@ impl Module {
 }
 
 
-impl AddAssign<Assign> for Module {
-    fn add_assign(&mut self, other: Assign) {
+impl<'module> AddAssign<Assign<'module>> for Module<'module> {
+    fn add_assign(&mut self, other: Assign<'module>) {
         if let None = self.assigns.get(other.dest.name()) {
             self.assigns.insert(String::from(other.dest.name()), other);
         } else {
@@ -109,8 +110,8 @@ impl AddAssign<Assign> for Module {
     }
 }
 
-impl AddAssign<Signal> for Module {
-    fn add_assign(&mut self, other: Signal) {
+impl<'module> AddAssign<Signal<'module>> for Module<'module> {
+    fn add_assign(&mut self, other: Signal<'module>) {
         if let None = self.inputs.get(other.name()) {
             self.inputs.insert(String::from(other.name()), other);
         } else {
@@ -119,8 +120,8 @@ impl AddAssign<Signal> for Module {
     }
 }
 
-impl SubAssign<Signal> for Module {
-    fn sub_assign(&mut self, other: Signal) {
+impl<'module> SubAssign<Signal<'module>> for Module<'module> {
+    fn sub_assign(&mut self, other: Signal<'module>) {
         if let None = self.outputs.get(other.name()) {
             self.outputs.insert(String::from(other.name()), other);
         } else {
@@ -128,6 +129,7 @@ impl SubAssign<Signal> for Module {
         }
     }
 }
+/*
 
 #[duplicate(tt; [Module]; [Scope])]
 impl Index<Signal> for tt {
@@ -159,8 +161,9 @@ impl IndexMut<Signal> for tt {
         &mut self.assign_op
     }
 }
+*/
 
-impl Scope {
+impl<'module> Scope<'module> {
     pub fn new() -> Self {
         Scope {
             cond: AlwaysComb,
@@ -168,22 +171,17 @@ impl Scope {
 
             assigns: BTreeMap::new(),
             assign_signal: None,
-            assign_op: Op::fake(),
+            assign_op: None,
 
             sync: false,
         }
     }
 
-    pub fn when<T>(&mut self, _stub: bool, add_rules: T) -> &mut Self where T: Fn(&mut Scope) -> () {
+    pub fn when<T>(&mut self, _cond: &str, add_rules: T) -> &mut Self where T: Fn(&mut Scope) -> () {
         let mut scope = Scope::new();
 
-        let last_condition = Condition::pop_last();
-        if let Some(cond) = last_condition {
-            scope.cond = When(cond);
-            scope.sync = self.sync;
-        } else {
-            panic!("`when` rule expects a proper condition, got none");
-        }
+        scope.sync = self.sync;
+        self.cond = When(true);
 
         add_rules(&mut scope);
         self.scopes.push(scope);
@@ -193,13 +191,8 @@ impl Scope {
     pub fn elsewhen<T>(&mut self, _stub: bool, add_rules: T) -> &mut Self where T: Fn(&mut Scope) -> () {
         let mut scope = Scope::new();
 
-        let last_condition = Condition::pop_last();
-        if let Some(cond) = last_condition {
-            scope.cond = ElseWhen(cond);
-            scope.sync = self.sync;
-        } else {
-            panic!("`elsewhen` rule expects a proper condition, got none");
-        }
+        scope.sync = self.sync;
+        self.cond = ElseWhen(true);
 
         add_rules(&mut scope);
         self.scopes.push(scope);
@@ -220,7 +213,7 @@ impl Scope {
         let assign_op = if sync { "<=" } else { "=" };
 
         if let Some(sig) = self.assign_signal {
-            s.push_str(&format!("{} {} {};", &sig.repr(), assign_op, &self.assign_op.repr()));
+            s.push_str(&format!("{} {} {};", &sig.repr(), assign_op, &self.assign_op.as_ref().unwrap().repr()));
             s.push_str("\n");
         }
 
@@ -236,6 +229,7 @@ impl Scope {
     }
 }
 
+/*
 impl AddAssign<Assign> for Scope {
     fn add_assign(&mut self, other: Assign) {
         if let None = self.assigns.get(other.dest.name()) {
@@ -245,8 +239,9 @@ impl AddAssign<Assign> for Scope {
         }
     }
 }
+*/
 
-impl Synth for Scope {
+impl Synth for Scope<'_> {
     fn synth(&self) -> String {
         let mut s = String::new();
 
