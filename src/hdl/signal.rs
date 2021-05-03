@@ -1,9 +1,9 @@
-//use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
+use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
 use arraystring::{ArrayString, typenum::U64};
 use super::{Operand, Module};
-//use super::expr::{Op};
+use super::expr::{Op};
 //use super::condition::{Condition};
-//use duplicate::duplicate;
+use duplicate::duplicate;
 //use std::cmp::Ordering;
 
 type SignalName = ArrayString<U64>;
@@ -12,7 +12,8 @@ type SignalName = ArrayString<U64>;
 pub struct Signal<'module> {
     name: SignalName,
     width: u32,
-    module: Option<&'module Module<'module>>,
+
+    pub module: Option<&'module Module<'module>>,
 }
 
 impl Signal<'_> {
@@ -49,16 +50,16 @@ impl Operand for Signal<'_> {
     }
 }
 
-/*
-#[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
-impl Add<tt> for Signal {
-    type Output = Op;
+#[duplicate(tt; [Signal<'module>]; [Op<'module>]; [u32]; [i32])]
+impl<'module> Add<tt> for Signal<'module> {
+    type Output = Op<'module>;
 
     fn add(self, other: tt) -> Self::Output {
-        return Op::new(self, other, "+");
+        return Op::new(&self.clone(), other, "+");
     }
 }
 
+/*
 #[duplicate(tt; [Signal]; [Op]; [u32]; [i32])]
 impl BitAnd<tt> for Signal {
     type Output = Op;

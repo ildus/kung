@@ -1,5 +1,6 @@
 #[cfg(test)]
 
+use crate::comb;
 use crate::hdl::*;
 
 #[test]
@@ -13,9 +14,6 @@ fn simple_adder() {
     m += a;
     m += b;
     m -= o;
-
-    //m[c] = a + b;
-    //m[o] = c + 1;
 
     assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule\n");
 }
@@ -126,20 +124,10 @@ fn signal_conds() {
 }
 */
 
-#[macro_export]
-macro_rules! cond {
-    ($e:expr) => {{
-        {
-            //let _res: bool = $e;
-            println!("{}", stringify!{$e});
-        }
-    }};
-}
-
 #[test]
 fn complex_conds() {
     let a = Signal::new("a", 32);
     let b = Signal::new("b", 32);
 
-    cond! { a == 1 || b == 2 }
+    comb!(a := b + 1);
 }

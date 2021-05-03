@@ -23,3 +23,16 @@ impl Operand for tt {
         return self.to_string()
     }
 }
+
+#[macro_export]
+macro_rules! comb {
+    ($a:ident := $e:expr) => {{
+        {
+            //check is valid op
+            if let Some(ref mut m) = $a.module {
+                m += expr::Assign::new(&$a, $e);
+            }
+            println!("{} = {}", stringify!{$a}, stringify!{$e});
+        }
+    }};
+}

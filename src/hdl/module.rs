@@ -1,4 +1,3 @@
-//use std::ops::{AddAssign, SubAssign, Index, IndexMut};
 use std::ops::{AddAssign, SubAssign};
 use super::{Synth, Signal, Operand};
 use super::expr::{Assign, Op};
@@ -129,39 +128,6 @@ impl<'module> SubAssign<Signal<'module>> for Module<'module> {
         }
     }
 }
-/*
-
-#[duplicate(tt; [Module]; [Scope])]
-impl Index<Signal> for tt {
-    type Output = Op;
-
-    fn index(&self, index: Signal) -> &Self::Output {
-        for (name, item) in &self.assigns {
-            if index.name() == name {
-                return &item.op
-            }
-        }
-        panic!("could not find any assign")
-    }
-}
-
-#[duplicate(tt; [Module]; [Scope])]
-impl IndexMut<Signal> for tt {
-    fn index_mut(&mut self, signal: Signal) -> &mut Self::Output {
-        unsafe {
-            let ptr = read(&self.assign_op);
-            if let Some(sig) = self.assign_signal {
-                let assign = Assign::new(sig, ptr);
-                self.add_assign(assign);
-            }
-            write(&mut self.assign_op, Op::fake());
-        }
-
-        self.assign_signal = Some(signal);
-        &mut self.assign_op
-    }
-}
-*/
 
 impl<'module> Scope<'module> {
     pub fn new() -> Self {
