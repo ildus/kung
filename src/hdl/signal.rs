@@ -1,40 +1,46 @@
-use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
+//use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
+use std::ops::{Add};
 use arraystring::{ArrayString, typenum::U64};
-use super::{Operand, Module};
+use super::{Operand};
 use super::expr::{Op};
+use super::module::{VModule};
 //use super::condition::{Condition};
 use duplicate::duplicate;
 //use std::cmp::Ordering;
 
 type SignalName = ArrayString<U64>;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Signal<'module> {
     name: SignalName,
     width: u32,
 
-    pub module: Option<&'module Module<'module>>,
+    pub module: Option<VModule<'module>>,
 }
 
 impl Signal<'_> {
     pub fn new(name: &str, width: u32) -> Self {
         let name = SignalName::try_from_str(name).expect("expected valid name");
 
-        return Signal{
+        Signal{
             name: name,
             width,
             module: None,
         }
     }
 
+    pub fn copy(&self) -> Self {
+        Signal::new(self.name(), self.width)
+    }
+
     pub fn bool(name: &str) -> Self {
-        return Signal::new(name, 1);
+        Signal::new(name, 1)
     }
 
     pub fn def(&self) -> String {
         let mut s = String::new();
         s.push_str(&format!("logic [{}:0] {}", &(self.width - 1).to_string(), &self.name));
-        return s;
+        s
     }
 
     pub fn name(&self) -> &str {
@@ -46,16 +52,27 @@ impl Operand for Signal<'_> {
     fn repr(&self) -> String {
         let mut s = String::new();
         s.push_str(&format!("{}", &self.name));
-        return s;
+        s
     }
 }
 
-#[duplicate(tt; [Signal<'module>]; [Op<'module>]; [u32]; [i32])]
+impl<'module> Add<Signal<'module>> for Signal<'module> {
+    type Output = Op;
+
+    fn add(self, other: Signal<'module>) -> Self::Output {
+        let cloned = Signal::new(self.name(), self.width);
+        let other = Signal::new(other.name(), other.width);
+        Op::new(Box::new(cloned), Box::new(other), "+")
+    }
+}
+
+#[duplicate(tt; [Op]; [u32]; [i32])]
 impl<'module> Add<tt> for Signal<'module> {
-    type Output = Op<'module>;
+    type Output = Op;
 
     fn add(self, other: tt) -> Self::Output {
-        return Op::new(&self.clone(), other, "+");
+        let cloned = Signal::new(self.name(), self.width);
+        Op::new(Box::new(cloned), Box::new(other), "+")
     }
 }
 

@@ -1,17 +1,16 @@
 use std::ops::{AddAssign, SubAssign};
-use super::{Synth, Signal, Operand};
-use super::expr::{Assign, Op};
+use super::{Synth, Signal};
+use super::expr::{Assign};
 use super::condition::{Conditional, Conditional::*};
 //use std::ptr::{read, write};
 //use duplicate::duplicate;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 pub struct Scope<'module> {
     cond: Conditional<'module>,
 
     assigns: BTreeMap<String, Assign<'module>>,
-    assign_signal: Option<Signal<'module>>,
-    assign_op: Option<Op<'module>>,
 
     sync: bool,
     scopes: Vec<Scope<'module>>,
@@ -23,11 +22,13 @@ pub struct Module<'module> {
     outputs: BTreeMap<String, Signal<'module>>,
 
     assigns: BTreeMap<String, Assign<'module>>,
-    assign_signal: Option<Signal<'module>>,
-    assign_op: Option<Op<'module>>,
-
     scopes: Vec<Scope<'module>>,
 }
+
+pub trait SignalHolder {
+    fn logic(&self, name: &'_ str, width: u32) -> Signal<'_>;
+}
+pub type VModule<'a> = Rc<Module<'a>>;
 
 impl<'module> Synth for Module<'module> {
     fn synth(&self) -> String {
@@ -49,11 +50,6 @@ impl<'module> Synth for Module<'module> {
             s.push_str(";\n");
         }
 
-        if let Some(sig) = self.assign_signal {
-            s.push_str(&format!("assign {} = {};", &sig.repr(), &self.assign_op.as_ref().unwrap().repr()));
-            s.push_str("\n");
-        }
-
         for (_, assign) in &self.assigns {
             s.push_str("assign ");
             s.push_str(&assign.synth(false));
@@ -70,17 +66,15 @@ impl<'module> Synth for Module<'module> {
 }
 
 impl<'module> Module<'module> {
-    pub fn new(name: &str) -> Module {
-        return Module {
+    pub fn new(name: &str) -> VModule {
+        return Rc::new(Module {
             name: String::from(name),
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
             scopes: vec![],
 
             assigns: BTreeMap::new(),
-            assign_signal: None,
-            assign_op: None,
-        }
+        })
     }
 
     pub fn comb<T>(&mut self, add_rules: T) where T:Fn(&mut Scope) -> () {
@@ -98,6 +92,13 @@ impl<'module> Module<'module> {
     }
 }
 
+impl<'module> SignalHolder for VModule<'module> {
+    fn logic(&self, name: &'_ str, width: u32) -> Signal<'_> {
+        let mut sig = Signal::new(name, width);
+        sig.module = Some(Rc::clone(self));
+        sig
+    }
+}
 
 impl<'module> AddAssign<Assign<'module>> for Module<'module> {
     fn add_assign(&mut self, other: Assign<'module>) {
@@ -109,10 +110,11 @@ impl<'module> AddAssign<Assign<'module>> for Module<'module> {
     }
 }
 
-impl<'module> AddAssign<Signal<'module>> for Module<'module> {
+impl<'module> AddAssign<Signal<'module>> for VModule<'module> {
     fn add_assign(&mut self, other: Signal<'module>) {
-        if let None = self.inputs.get(other.name()) {
-            self.inputs.insert(String::from(other.name()), other);
+        let val = Rc::get_mut(self).unwrap();
+        if !val.inputs.contains_key(other.name()) {
+            val.inputs.insert(String::from(other.name()), other.copy());
         } else {
             panic!("input with name '{}' already defined in the module", other.name());
         }
@@ -136,9 +138,6 @@ impl<'module> Scope<'module> {
             scopes: vec![],
 
             assigns: BTreeMap::new(),
-            assign_signal: None,
-            assign_op: None,
-
             sync: false,
         }
     }
@@ -176,12 +175,6 @@ impl<'module> Scope<'module> {
 
     fn statements(&self, sync: bool) -> String {
         let mut s = String::new();
-        let assign_op = if sync { "<=" } else { "=" };
-
-        if let Some(sig) = self.assign_signal {
-            s.push_str(&format!("{} {} {};", &sig.repr(), assign_op, &self.assign_op.as_ref().unwrap().repr()));
-            s.push_str("\n");
-        }
 
         for (_, assign) in &self.assigns {
             s.push_str(&assign.synth(sync));

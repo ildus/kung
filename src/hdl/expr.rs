@@ -2,26 +2,28 @@ use crate::hdl::{Operand, Signal};
 //use std::ops::{Add, Sub, Shl, Shr, Mul, Div, BitAnd, BitOr, BitXor, Not};
 //use duplicate::duplicate;
 
-pub struct Op<'module> {
-    pub a: &'module dyn Operand,
-    pub b: Option<&'module dyn Operand>,
+type OpOperand = Box<dyn Operand>;
+
+pub struct Op {
+    pub a: OpOperand,
+    pub b: Option<OpOperand>,
     pub op: String,
 }
 
 pub struct Assign<'module> {
-    pub op: Op<'module>,
+    pub op: Op,
     pub dest: &'module Signal<'module>,
 }
 
-impl<'module> Op<'module> {
-    pub fn new_unary(a: &'module Signal<'module>, op: &str) -> Self {
+impl Op {
+    pub fn new_unary(a: OpOperand, op: &str) -> Self {
         Self {
             a: a,
             b: None,
             op: String::from(op),
         }
     }
-    pub fn new(a: &'module dyn Operand, b: &'module dyn Operand, op: &str) -> Self {
+    pub fn new(a: OpOperand, b: OpOperand, op: &str) -> Self {
         Self {
             a: a,
             b: Some(b),
@@ -30,7 +32,7 @@ impl<'module> Op<'module> {
     }
 }
 
-impl Operand for Op<'_> {
+impl Operand for Op {
     fn repr(&self) -> String {
         let s = match &self.b {
             Some(val) => format!("({} {} {})", &self.a.repr(), &self.op, &val.repr()),
@@ -41,7 +43,7 @@ impl Operand for Op<'_> {
 }
 
 impl<'module> Assign<'module> {
-    pub fn new(dest: &'module Signal, op: Op<'module>) -> Self {
+    pub fn new(dest: &'module Signal, op: Op) -> Self {
         Assign {
             op: op,
             dest,

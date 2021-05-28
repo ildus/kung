@@ -5,7 +5,7 @@ mod signal;
 mod module;
 
 pub use crate::hdl::signal::Signal;
-pub use crate::hdl::module::Module;
+pub use crate::hdl::module::{Module, SignalHolder};
 
 use duplicate::duplicate;
 
@@ -28,9 +28,18 @@ impl Operand for tt {
 macro_rules! comb {
     ($a:ident := $e:expr) => {{
         {
-            //check is valid op
-            if let Some(ref mut m) = $a.module {
-                m += expr::Assign::new(&$a, $e);
+            use std::ptr;
+
+            unsafe {
+                //we expect that module lives longer than the signal anyway
+                if let Some(sigmod) = $a.module {
+                    let mut uninit: std::mem::MaybeUninit<Module> = std::mem::MaybeUninit::uninit();
+                    let ptr = uninit.as_mut_ptr();
+                    ptr::write(ptr, ptr::read(&*sigmod));
+                    *ptr += expr::Assign::new(&$a, $e);
+                } else {
+                    panic!("signal doesn't have associated module")
+                }
             }
             println!("{} = {}", stringify!{$a}, stringify!{$e});
         }

@@ -6,14 +6,14 @@ use crate::hdl::*;
 #[test]
 fn simple_adder() {
     let mut m = Module::new("adder");
-    let a = Signal::new("a", 32);
-    let b = Signal::new("b", 32);
-    let c = Signal::new("c", 32);
-    let o = Signal::new("o", 32);
+    let a = m.logic("a", 32);
+    let b = m.logic("b", 32);
+    let c = m.logic("c", 32);
+    let o = m.logic("o", 32);
 
     m += a;
-    m += b;
-    m -= o;
+    //m += b;
+    //m -= o;
 
     assert_eq!(m.synth(), "module adder();\ninput logic [31:0] a;\ninput logic [31:0] b;\noutput logic [31:0] o;\nassign o = (c + 1);\nassign c = (a + b);\nendmodule\n");
 }
@@ -126,8 +126,11 @@ fn signal_conds() {
 
 #[test]
 fn complex_conds() {
-    let a = Signal::new("a", 32);
-    let b = Signal::new("b", 32);
+    let m = Module::new("sync");
 
+    let a = m.logic("a", 32);
+    let b = m.logic("b", 32);
+
+    comb!(a := b + 1);
     comb!(a := b + 1);
 }
